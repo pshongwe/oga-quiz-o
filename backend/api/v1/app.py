@@ -18,6 +18,8 @@ import os
 app = Flask(__name__)
 app.register_blueprint(app_views)
 CORS(app, resources={r"/api/v1/*": {"origins": "*"}})
+
+
 auth = None
 auth_type = getenv('AUTH_TYPE', 'auth')
 if auth_type == 'auth':
@@ -73,6 +75,88 @@ def authenticate_user():
             if user is None:
                 abort(403)
             request.current_user = user
+
+
+# New endpoints for the quiz functionality
+
+@app.route('/api/v1/quiz', methods=['POST'])
+def create_quiz():
+    """Create a new quiz"""
+    if not request.json or 'title' not in request.json:
+        abort(400, description="Missing title")
+    # Logic to create a new quiz
+    return jsonify({"message": "Quiz created successfully"}), 201
+
+
+@app.route('/api/v1/quiz/<int:quiz_id>', methods=['GET'])
+def get_quiz(quiz_id):
+    """Get a specific quiz"""
+    # Logic to retrieve a quiz by ID
+    return jsonify({"quiz_id": quiz_id, "title": "Sample Quiz"})
+
+
+@app.route('/api/v1/quizzes', methods=['GET'])
+def list_quizzes():
+    """List all quizzes"""
+    # Logic to list all quizzes
+    return jsonify({"quizzes": [{"id": 1, "title": "Quiz 1"}, {"id": 2, "title": "Quiz 2"}]})
+
+
+@app.route('/api/v1/quiz/<int:quiz_id>/question', methods=['POST'])
+def add_question(quiz_id):
+    """Add a question to a quiz"""
+    if not request.json or 'question' not in request.json or 'answer' not in request.json:
+        abort(400, description="Missing question or answer")
+    # Logic to add a question to the quiz
+    return jsonify({"message": "Question added successfully"}), 201
+
+
+@app.route('/api/v1/question/<int:question_id>', methods=['GET'])
+def get_question(question_id):
+    """Get a specific question"""
+    # Logic to retrieve a question by ID
+    return jsonify({"question_id": question_id, "question": "Sample Question", "answer": "Sample Answer"})
+
+
+@app.route('/api/v1/quiz/<int:quiz_id>/start', methods=['POST'])
+def start_quiz_session(quiz_id):
+    """Start a new quiz session"""
+    # Logic to start a new quiz session
+    return jsonify({"session_id": 1, "quiz_id": quiz_id, "message": "Quiz session started"})
+
+
+@app.route('/api/v1/quiz/session/<int:session_id>', methods=['PUT'])
+def submit_answer(session_id):
+    """Submit an answer for the current question"""
+    if not request.json or 'answer' not in request.json:
+        abort(400, description="Missing answer")
+    # Logic to submit an answer and check if it's correct
+    return jsonify({"correct": True, "message": "Answer submitted successfully"})
+
+
+@app.route('/api/v1/quiz/session/<int:session_id>', methods=['GET'])
+def get_next_question(session_id):
+    """Get the next question in the quiz"""
+    # Logic to get the next question in the quiz session
+    return jsonify({"question_id": 2, "question": "Next Sample Question"})
+
+
+@app.route('/api/v1/score/<int:user_id>/<int:quiz_id>', methods=['GET'])
+def get_user_score(user_id, quiz_id):
+    """Get user's score for a specific quiz"""
+    # Logic to retrieve the user's score for the given quiz
+    return jsonify({"user_id": user_id, "quiz_id": quiz_id, "score": 80})
+
+
+@app.route('/api/v1/leaderboard/<int:quiz_id>', methods=['GET'])
+def get_leaderboard(quiz_id):
+    """Get leaderboard for a specific quiz"""
+    # Logic to retrieve the leaderboard for the given quiz
+    return jsonify({"quiz_id": quiz_id, "leaderboard": [
+        {"user_id": 1, "score": 95},
+        {"user_id": 2, "score": 88},
+        {"user_id": 3, "score": 82}
+    ]})
 
 
 if __name__ == "__main__":
