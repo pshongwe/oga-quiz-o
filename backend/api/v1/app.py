@@ -55,6 +55,30 @@ def forbidden(error) -> str:
     return jsonify({"error": "Forbidden"}), 403
 
 
+@app.route('/api/v1/auth_session/login', methods=['POST'])
+def login():
+    """Log in a user and create a session"""
+    email = request.form.get('email')
+    password = request.form.get('password')
+    if not email or not password:
+        abort(400, description="Missing email or password")
+    user = User.search({"email": email})
+    if not user or not user[0].is_valid_password(password):
+        abort(401, description="Invalid credentials")
+    session_id = auth.create_session(user[0].id)
+    response = jsonify({"email": email, "message": "logged in"})
+    response.set_cookie(os.getenv('SESSION_NAME'), session_id)
+    return response
+
+
+@app.route('/api/v1/auth_session/logout', methods=['DELETE'])
+def logout():
+    """Log out a user and destroy the session"""
+    if auth.destroy_session(request):
+        return jsonify({}), 200
+    abort(404)
+
+
 @app.before_request
 def authenticate_user():
     """Authenticates a user before processing a request
@@ -67,21 +91,19 @@ def authenticate_user():
             '/api/v1/auth_session/login/',
         ]
         if auth.require_auth(request.path, excluded_paths):
-            auth_header = auth.authorization_header(request)
-            user = auth.current_user(request)
-            if auth.authorization_header(request) is None:
-                if auth.session_cookie(request) is None:
-                    return None, abort(401)
-            if user is None:
+            if auth.authorization_header(request) is None and auth.session_cookie(request) is None:
+                abort(401)
+            request.current_user = auth.current_user(request)
+            if request.current_user is None:
                 abort(403)
-            request.current_user = user
-
 
 # New endpoints for the quiz functionality
 
 @app.route('/api/v1/quiz', methods=['POST'])
 def create_quiz():
     """Create a new quiz"""
+    if not request.current_user:
+        abort(401)
     if not request.json or 'title' not in request.json:
         abort(400, description="Missing title")
     # Logic to create a new quiz
@@ -91,6 +113,8 @@ def create_quiz():
 @app.route('/api/v1/quiz/<int:quiz_id>', methods=['GET'])
 def get_quiz(quiz_id):
     """Get a specific quiz"""
+    if not request.current_user:
+        abort(401)
     # Logic to retrieve a quiz by ID
     return jsonify({"quiz_id": quiz_id, "title": "Sample Quiz"})
 
@@ -98,6 +122,8 @@ def get_quiz(quiz_id):
 @app.route('/api/v1/quizzes', methods=['GET'])
 def list_quizzes():
     """List all quizzes"""
+    if not request.current_user:
+        abort(401)
     # Logic to list all quizzes
     return jsonify({"quizzes": [{"id": 1, "title": "Quiz 1"}, {"id": 2, "title": "Quiz 2"}]})
 
@@ -105,6 +131,8 @@ def list_quizzes():
 @app.route('/api/v1/quiz/<int:quiz_id>/question', methods=['POST'])
 def add_question(quiz_id):
     """Add a question to a quiz"""
+    if not request.current_user:
+        abort(401)
     if not request.json or 'question' not in request.json or 'answer' not in request.json:
         abort(400, description="Missing question or answer")
     # Logic to add a question to the quiz
@@ -114,6 +142,8 @@ def add_question(quiz_id):
 @app.route('/api/v1/question/<int:question_id>', methods=['GET'])
 def get_question(question_id):
     """Get a specific question"""
+    if not request.current_user:
+        abort(401)
     # Logic to retrieve a question by ID
     return jsonify({"question_id": question_id, "question": "Sample Question", "answer": "Sample Answer"})
 
@@ -121,6 +151,8 @@ def get_question(question_id):
 @app.route('/api/v1/quiz/<int:quiz_id>/start', methods=['POST'])
 def start_quiz_session(quiz_id):
     """Start a new quiz session"""
+    if not request.current_user:
+        abort(401)
     # Logic to start a new quiz session
     return jsonify({"session_id": 1, "quiz_id": quiz_id, "message": "Quiz session started"})
 
@@ -128,6 +160,8 @@ def start_quiz_session(quiz_id):
 @app.route('/api/v1/quiz/session/<int:session_id>', methods=['PUT'])
 def submit_answer(session_id):
     """Submit an answer for the current question"""
+    if not request.current_user:
+        abort(401)
     if not request.json or 'answer' not in request.json:
         abort(400, description="Missing answer")
     # Logic to submit an answer and check if it's correct
@@ -137,6 +171,8 @@ def submit_answer(session_id):
 @app.route('/api/v1/quiz/session/<int:session_id>', methods=['GET'])
 def get_next_question(session_id):
     """Get the next question in the quiz"""
+    if not request.current_user:
+        abort(401)
     # Logic to get the next question in the quiz session
     return jsonify({"question_id": 2, "question": "Next Sample Question"})
 
@@ -144,6 +180,8 @@ def get_next_question(session_id):
 @app.route('/api/v1/score/<int:user_id>/<int:quiz_id>', methods=['GET'])
 def get_user_score(user_id, quiz_id):
     """Get user's score for a specific quiz"""
+    if not request.current_user:
+        abort(401)
     # Logic to retrieve the user's score for the given quiz
     return jsonify({"user_id": user_id, "quiz_id": quiz_id, "score": 80})
 
@@ -151,6 +189,8 @@ def get_user_score(user_id, quiz_id):
 @app.route('/api/v1/leaderboard/<int:quiz_id>', methods=['GET'])
 def get_leaderboard(quiz_id):
     """Get leaderboard for a specific quiz"""
+    if not request.current_user:
+        abort(401)
     # Logic to retrieve the leaderboard for the given quiz
     return jsonify({"quiz_id": quiz_id, "leaderboard": [
         {"user_id": 1, "score": 95},
