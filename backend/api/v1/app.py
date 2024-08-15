@@ -99,7 +99,7 @@ def authenticate_user():
 
 # New endpoints for the quiz functionality
 
-@app.route('/api/v1/quiz', methods=['POST'])
+@app.route('/api/v1/quizzes', methods=['POST'])
 def create_quiz():
     """Create a new quiz"""
     if not request.current_user:
@@ -110,7 +110,7 @@ def create_quiz():
     return jsonify({"message": "Quiz created successfully"}), 201
 
 
-@app.route('/api/v1/quiz/<int:quiz_id>', methods=['GET'])
+@app.route('/api/v1/quizzes/<int:quiz_id>', methods=['GET'])
 def get_quiz(quiz_id):
     """Get a specific quiz"""
     if not request.current_user:
@@ -128,7 +128,7 @@ def list_quizzes():
     return jsonify({"quizzes": [{"id": 1, "title": "Quiz 1"}, {"id": 2, "title": "Quiz 2"}]})
 
 
-@app.route('/api/v1/quiz/<int:quiz_id>/question', methods=['POST'])
+@app.route('/api/v1/quizzes/<int:quiz_id>/question', methods=['POST'])
 def add_question(quiz_id):
     """Add a question to a quiz"""
     if not request.current_user:
@@ -148,7 +148,7 @@ def get_question(question_id):
     return jsonify({"question_id": question_id, "question": "Sample Question", "answer": "Sample Answer"})
 
 
-@app.route('/api/v1/quiz/<int:quiz_id>/start', methods=['POST'])
+@app.route('/api/v1/quizzes/<int:quiz_id>/start', methods=['POST'])
 def start_quiz_session(quiz_id):
     """Start a new quiz session"""
     if not request.current_user:
@@ -157,7 +157,7 @@ def start_quiz_session(quiz_id):
     return jsonify({"session_id": 1, "quiz_id": quiz_id, "message": "Quiz session started"})
 
 
-@app.route('/api/v1/quiz/session/<int:session_id>', methods=['PUT'])
+@app.route('/api/v1/quizzes/session/<int:session_id>', methods=['PUT'])
 def submit_answer(session_id):
     """Submit an answer for the current question"""
     if not request.current_user:
@@ -168,7 +168,7 @@ def submit_answer(session_id):
     return jsonify({"correct": True, "message": "Answer submitted successfully"})
 
 
-@app.route('/api/v1/quiz/session/<int:session_id>', methods=['GET'])
+@app.route('/api/v1/quizzes/session/<int:session_id>', methods=['GET'])
 def get_next_question(session_id):
     """Get the next question in the quiz"""
     if not request.current_user:
