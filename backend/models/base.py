@@ -1,137 +1,98 @@
 #!/usr/bin/env python3
-""" Base module
-"""
+"""Base module using MongoDB."""
 from datetime import datetime
 from typing import TypeVar, List, Iterable
-from os import path
-import json
-import uuid
+from bson.objectid import ObjectId
+from pymongo import MongoClient
 
 
 TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%S"
-DATA = {}
-
 
 class Base():
-    """ Base class
-    """
+    """Base class."""
 
     def __init__(self, *args: list, **kwargs: dict):
-        """ Initialize a Base instance
-        """
-        s_class = str(self.__class__.__name__)
-        if DATA.get(s_class) is None:
-            DATA[s_class] = {}
+        """Initialize a Base instance."""
+        self._id = kwargs.get('_id', ObjectId())
+        self.created_at = kwargs.get('created_at', datetime.utcnow())
+        if isinstance(self.created_at, str):
+            self.created_at = datetime.strptime(self.created_at, TIMESTAMP_FORMAT)
+        self.updated_at = kwargs.get('updated_at', datetime.utcnow())
+        if isinstance(self.updated_at, str):
+            self.updated_at = datetime.strptime(self.updated_at, TIMESTAMP_FORMAT)
 
-        self.id = kwargs.get('id', str(uuid.uuid4()))
-        if kwargs.get('created_at') is not None:
-            self.created_at = datetime.strptime(kwargs.get('created_at'),
-                                                TIMESTAMP_FORMAT)
-        else:
-            self.created_at = datetime.utcnow()
-        if kwargs.get('updated_at') is not None:
-            self.updated_at = datetime.strptime(kwargs.get('updated_at'),
-                                                TIMESTAMP_FORMAT)
-        else:
-            self.updated_at = datetime.utcnow()
+        # Assuming a common MongoDB collection for all derived classes
+        self.collection_name = self.__class__.__name__.lower() + "s"
 
     def __eq__(self, other: TypeVar('Base')) -> bool:
-        """ Equality
-        """
+        """Equality."""
         if type(self) != type(other):
             return False
         if not isinstance(self, Base):
             return False
-        return (self.id == other.id)
+        return str(self._id) == str(other._id)
 
     def to_json(self, for_serialization: bool = False) -> dict:
-        """ Convert the object a JSON dictionary
-        """
-        result = {}
+        """Convert the object to a JSON dictionary."""
+        result = {
+            "_id": str(self._id),
+            "created_at": self.created_at.strftime(TIMESTAMP_FORMAT),
+            "updated_at": self.updated_at.strftime(TIMESTAMP_FORMAT),
+        }
         for key, value in self.__dict__.items():
-            if not for_serialization and key[0] == '_':
+            if key.startswith("_") and not for_serialization:
                 continue
-            if type(value) is datetime:
+            if isinstance(value, datetime):
                 result[key] = value.strftime(TIMESTAMP_FORMAT)
             else:
                 result[key] = value
         return result
 
-    @classmethod
-    def load_from_file(cls):
-        """ Load all objects from file
-        """
-        s_class = cls.__name__
-        file_path = ".db_{}.json".format(s_class)
-        DATA[s_class] = {}
-        if not path.exists(file_path):
-            return
-
-        with open(file_path, 'r') as f:
-            objs_json = json.load(f)
-            for obj_id, obj_json in objs_json.items():
-                DATA[s_class][obj_id] = cls(**obj_json)
-
-    @classmethod
-    def save_to_file(cls):
-        """ Save all objects to file
-        """
-        s_class = cls.__name__
-        file_path = ".db_{}.json".format(s_class)
-        objs_json = {}
-        for obj_id, obj in DATA[s_class].items():
-            objs_json[obj_id] = obj.to_json(True)
-
-        with open(file_path, 'w') as f:
-            json.dump(objs_json, f)
-
     def save(self):
-        """ Save current object
-        """
-        s_class = self.__class__.__name__
+        """Save current object to MongoDB."""
         self.updated_at = datetime.utcnow()
-        DATA[s_class][self.id] = self
-        self.__class__.save_to_file()
+        db = self.get_db()
+        db[self.collection_name].update_one(
+            {"_id": self._id},
+            {"$set": self.to_json(True)},
+            upsert=True
+        )
 
     def remove(self):
-        """ Remove object
-        """
-        s_class = self.__class__.__name__
-        if DATA[s_class].get(self.id) is not None:
-            del DATA[s_class][self.id]
-            self.__class__.save_to_file()
+        """Remove object from MongoDB."""
+        db = self.get_db()
+        db[self.collection_name].delete_one({"_id": self._id})
+
+    @classmethod
+    def get_db(cls):
+        """Get MongoDB connection."""
+        client = MongoClient("mongodb://localhost:27017/")
+        return client["a_db"]
 
     @classmethod
     def count(cls) -> int:
-        """ Count all objects
-        """
-        s_class = cls.__name__
-        return len(DATA[s_class].keys())
+        """Count all objects."""
+        db = cls.get_db()
+        return db[cls.__name__.lower() + "s"].count_documents({})
 
     @classmethod
     def all(cls) -> Iterable[TypeVar('Base')]:
-        """ Return all objects
-        """
+        """Return all objects."""
         return cls.search()
 
     @classmethod
     def get(cls, id: str) -> TypeVar('Base'):
-        """ Return one object by ID
-        """
-        s_class = cls.__name__
-        return DATA[s_class].get(id)
+        """Return one object by ID."""
+        db = cls.get_db()
+        data = db[cls.__name__.lower() + "s"].find_one({"_id": ObjectId(id)})
+        if data:
+            return cls(**data)
+        return None
 
     @classmethod
     def search(cls, attributes: dict = {}) -> List[TypeVar('Base')]:
-        """ Search all objects with matching attributes
-        """
-        s_class = cls.__name__
-        def _search(obj):
-            if len(attributes) == 0:
-                return True
-            for k, v in attributes.items():
-                if (getattr(obj, k) != v):
-                    return False
-            return True
-        
-        return list(filter(_search, DATA[s_class].values()))
+        """Search all objects with matching attributes."""
+        db = cls.get_db()
+        query = {k: v for k, v in attributes.items()}
+        result = db[cls.__name__.lower() + "s"].find(query)
+        return [cls(**item) for item in result]

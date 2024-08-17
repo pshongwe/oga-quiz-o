@@ -1,59 +1,38 @@
 #!/usr/bin/env python3
-""" User module
+"""The `user` model's module using MongoDB.
 """
-import hashlib
-from models.base import Base
+from bson.objectid import ObjectId
 
 
-class User(Base):
-    """ User class
+class User:
+    """Represents a record from the `users` collection.
     """
 
-    def __init__(self, *args: list, **kwargs: dict):
-        """ Initialize a User instance
-        """
-        super().__init__(*args, **kwargs)
-        self.email = kwargs.get('email')
-        self._password = kwargs.get('_password')
-        self.first_name = kwargs.get('first_name')
-        self.last_name = kwargs.get('last_name')
+    def __init__(self, email: str, hashed_password: str, session_id: str = None, reset_token: str = None):
+        self._id = ObjectId()
+        self.email = email
+        self.hashed_password = hashed_password
+        self.session_id = session_id
+        self.reset_token = reset_token
 
-    @property
-    def password(self) -> str:
-        """ Getter of the password
-        """
-        return self._password
+    def to_dict(self):
+        """Converts the User object to a dictionary."""
+        return {
+            "_id": self._id,
+            "email": self.email,
+            "hashed_password": self.hashed_password,
+            "session_id": self.session_id,
+            "reset_token": self.reset_token,
+        }
 
-    @password.setter
-    def password(self, pwd: str):
-        """ Setter of a new password: encrypt in SHA256
-        """
-        if pwd is None or type(pwd) is not str:
-            self._password = None
-        else:
-            self._password = hashlib.sha256(pwd.encode()).hexdigest().lower()
-
-    def is_valid_password(self, pwd: str) -> bool:
-        """ Validate a password
-        """
-        if pwd is None or type(pwd) is not str:
-            return False
-        if self.password is None:
-            return False
-        pwd_e = pwd.encode()
-        return hashlib.sha256(pwd_e).hexdigest().lower() == self.password
-
-    def display_name(self) -> str:
-        """ Display User name based on email/first_name/last_name
-        """
-        if self.email is None and self.first_name is None \
-                and self.last_name is None:
-            return ""
-        if self.first_name is None and self.last_name is None:
-            return "{}".format(self.email)
-        if self.last_name is None:
-            return "{}".format(self.first_name)
-        if self.first_name is None:
-            return "{}".format(self.last_name)
-        else:
-            return "{} {}".format(self.first_name, self.last_name)
+    @classmethod
+    def from_dict(cls, data: dict):
+        """Creates a User object from a dictionary."""
+        user = cls(
+            email=data["email"],
+            hashed_password=data["hashed_password"],
+            session_id=data.get("session_id"),
+            reset_token=data.get("reset_token"),
+        )
+        user._id = data["_id"]
+        return user

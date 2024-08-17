@@ -9,7 +9,7 @@ function Login({ onLogin }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('/api/login', { username, password });
+      const response = await axios.post('/api/v1/login', { username, password });
       onLogin(response.data);
     } catch (error) {
       console.error('Login failed:', error);

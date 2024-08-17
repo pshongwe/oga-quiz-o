@@ -1,0 +1,19 @@
+version: '3.11'
+services:
+  backend:
+    build:
+      context: .  # The context is the current directory, where both Dockerfile and podman-compose.yml are located
+      dockerfile: Dockerfile  # No need to change this if your Dockerfile is named 'Dockerfile'
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/app  # This mounts the backend directory into /app in the container
+    environment:
+      - MONGO_USER=${MONGO_USER}
+      - MONGO_PASSWORD=${MONGO_PASSWORD}
+      - MONGO_HOST=${MONGO_HOST}
+      - MONGO_DBNAME=${MONGO_DBNAME}
+      - FLASK_APP=api/v1/app.py
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+    command: flask run --host=0.0.0.0 --port=5000
