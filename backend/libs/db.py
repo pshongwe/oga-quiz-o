@@ -17,37 +17,44 @@ class DB:
     """DB class.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, dbname: str = MONGO_DBNAME) -> None:
         """Initialize a new DB instance.
         """
         self._client = MongoClient(f"mongodb+srv://{MONGO_USER}:{MONGO_PASSWORD}@{MONGO_HOST}/{MONGO_DBNAME}?retryWrites=true&w=majority")
-        self._db = self._client["oga_db"]
-        self._users = self._db["users"]
-        self._users.create_index("email", unique=True)
+        self._db = self._client[dbname]
+    
+    def get_collection(self, collection_name: str):
+        """Dynamically get a collection by name."""
+        return self._db[collection_name]
 
-    def add_user(self, email: str, hashed_password: str) -> dict:
+
+    def add_user(self, email: str, hashed_password: str, collection_name: str = "users") -> dict:
         """Adds a new user to the database.
         """
         try:
+            collection = self.get_collection(collection_name)
+            collection.create_index("email", unique=True)
             user = {"email": email, "hashed_password": hashed_password}
-            result = self._users.insert_one(user)
+            result = collection.insert_one(user)
             user["_id"] = result.inserted_id
             return user
         except DuplicateKeyError:
             return None
 
-    def find_user_by(self, **kwargs) -> dict:
+    def find_user_by(self, collection_name: str = "users", **kwargs) -> dict:
         """Finds a user based on a set of filters.
         """
-        user = self._users.find_one(kwargs)
+        collection = self.get_collection(collection_name)
+        user = collection.find_one(kwargs)
         if not user:
             raise ValueError("No user found with the given criteria.")
         return user
 
-    def update_user(self, user_id: str, **kwargs) -> None:
+    def update_user(self, user_id: str, collection_name: str = "users", **kwargs) -> None:
         """Updates a user based on a given id.
         """
-        result = self._users.update_one(
+        collection = self.get_collection(collection_name)
+        result = collection.update_one(
             {"_id": ObjectId(user_id)},
             {"$set": kwargs}
         )
