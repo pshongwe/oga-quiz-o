@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, abort, request
+from flask import Flask, jsonify, abort, request, redirect, url_for
 from flask_cors import CORS
 from flask_restx import Api
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
@@ -10,11 +10,10 @@ from libs.db import DB
 import os
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key'  # Needed for Flask-Login sessions
+app.secret_key = os.environ.get('MY_SECRET') # Needed for Flask-Login sessions
 app.register_blueprint(app_views)
 CORS(app, resources={r"/api/v1/*": {"origins": "*"}})
 api = Api(app, version='1.0', title='Oga Quiz O API', description='Oga Quiz O API Documentation', doc='/swagger/')
-
 login_manager = LoginManager()
 login_manager.init_app(app)
 auth = Auth()
@@ -84,10 +83,16 @@ def login():
 @app.route('/api/v1/auth_session/logout', methods=['DELETE'])
 @login_required
 def logout():
-    logout_user()
-    if auth.destroy_session(request):
-        return jsonify({}), 200
-    abort(404)
+    print(current_user)
+    user_id = str(current_user.id)  # Ensure this is a string
+    if auth.destroy_session(user_id):
+        logout_user()
+        return redirect(url_for('home'))  # Redirect to the root path '/'
+    return redirect(url_for('home'))
+
+@app.route('/')
+def home():
+    return "Welcome to the Home Page!"  # Or render a template
 
 # New endpoints for the quiz functionality
 @app.route('/api/v1/quizzes', methods=['POST'])

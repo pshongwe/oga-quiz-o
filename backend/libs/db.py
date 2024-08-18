@@ -11,7 +11,7 @@ MONGO_USER = os.environ.get('MONGO_USER')
 MONGO_PASSWORD = os.environ.get('MONGO_PASSWORD')
 MONGO_HOST = os.environ.get('MONGO_HOST')
 MONGO_DBNAME = os.environ.get('MONGO_DBNAME')
-
+MY_SECRET = os.environ.get('MY_SECRET')
 
 class DB:
     """DB class.

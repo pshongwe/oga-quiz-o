@@ -13,6 +13,7 @@ services:
       - MONGO_PASSWORD=${MONGO_PASSWORD}
       - MONGO_HOST=${MONGO_HOST}
       - MONGO_DBNAME=${MONGO_DBNAME}
+      - MY_SECRET=${MY_SECRET}
       - FLASK_APP=api/v1/app.py
       - FLASK_ENV=development
       - FLASK_DEBUG=1
