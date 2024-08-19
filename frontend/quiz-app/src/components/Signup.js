@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { TextField, Button, Container, Typography } from '@mui/material';
 import axiosInstance, { getQuizzesApiPath } from '../api/axiosConfig';
 
-
-function Login({ onLogin }) {
+function Signup({ onSignup }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -14,24 +13,23 @@ function Login({ onLogin }) {
       formData.append('email', email);
       formData.append('password', password);
 
-      const response = await axiosInstance.post(getQuizzesApiPath('auth_session/login'), formData, {
-        withCredentials: true, // Ensure cookies are included in requests
+      const response = await axiosInstance.post(getQuizzesApiPath('auth_session/signup'), formData, {
+        withCredentials: true,
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded', // Required for form data
+          'Content-Type': 'application/x-www-form-urlencoded',
         },
       });
 
-      onLogin(response.data);
+      onSignup(response.data);
     } catch (error) {
-      console.error('Login failed:', error);
-      // Handle login error (e.g., show error message)
+      console.error('Signup failed:', error);
     }
   };
 
   return (
     <Container maxWidth="xs">
       <Typography variant="h4" align="center" gutterBottom>
-        Login
+        Sign Up
       </Typography>
       <form onSubmit={handleSubmit}>
         <TextField
@@ -59,11 +57,11 @@ function Login({ onLogin }) {
           variant="contained"
           color="primary"
         >
-          Log In
+          Sign Up
         </Button>
       </form>
     </Container>
   );
 }
 
-export default Login;
+export default Signup;

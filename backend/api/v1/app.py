@@ -86,12 +86,6 @@ def logout():
     auth.destroy_session(user_id)
     logout_user()
     return jsonify({}), 204
-    #     return redirect(url_for('index'))  # Redirect to the root path '/'
-    # return redirect(url_for('index'))
-
-@app.route('/')
-def index():
-    return "Welcome to the Index Page!"  # Or render a template
 
 # New endpoints for the quiz functionality
 @app.route('/api/v1/quizzes', methods=['POST'])
@@ -101,7 +95,8 @@ def create_quiz():
         abort(400, description="Missing title")
     quiz = {
         'title': request.json['title'],
-        'questions': request.json['questions']
+        'options': request.json['options'],
+        'correctAnswer': request.json['correctAnswer']
     }
     result = db._db.quizzes.insert_one(quiz)
     return jsonify({"message": "Quiz created successfully", "id": str(result.inserted_id)}), 201
