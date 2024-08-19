@@ -50,8 +50,7 @@ def signup():
     if not email or not password:
         abort(400, description="Missing email or password")
 
-    hashed_password = generate_password_hash(password)
-    user = db.add_user(email=email, hashed_password=hashed_password)
+    user = auth.register_user(email, password)
     if not user:
         abort(400, description="User already exists")
 
@@ -72,7 +71,7 @@ def login():
         login_user(user_obj)
 
         # Create a session and set a cookie
-        session_id = auth.create_session(str(user['_id']))
+        session_id = auth.create_session(email)
         response = jsonify({"email": email, "message": "logged in"})
         response.set_cookie('session_id', str(session_id), httponly=True, secure=False)  # Adjust `secure` based on your environment
         return response
@@ -83,16 +82,16 @@ def login():
 @app.route('/api/v1/auth_session/logout', methods=['DELETE'])
 @login_required
 def logout():
-    print(current_user)
     user_id = str(current_user.id)  # Ensure this is a string
-    if auth.destroy_session(user_id):
-        logout_user()
-        return redirect(url_for('home'))  # Redirect to the root path '/'
-    return redirect(url_for('home'))
+    auth.destroy_session(user_id)
+    logout_user()
+    return jsonify({}), 204
+    #     return redirect(url_for('index'))  # Redirect to the root path '/'
+    # return redirect(url_for('index'))
 
 @app.route('/')
-def home():
-    return "Welcome to the Home Page!"  # Or render a template
+def index():
+    return "Welcome to the Index Page!"  # Or render a template
 
 # New endpoints for the quiz functionality
 @app.route('/api/v1/quizzes', methods=['POST'])
