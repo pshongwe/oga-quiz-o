@@ -1,18 +1,20 @@
 import React from 'react';
-import { BrowserRouter as Router, Switch, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
 import axiosInstance, { getQuizzesApiPath } from './api/axiosConfig';
 
 import Home from './components/Home';
-import Quizzes from './components/Quizzes.js';
+import Quizzes from './components/Quizzes';
 import QuizPage from './components/QuizPage';
 import Login from './components/Login';
 import Signup from './components/Signup';
-import Leaderboard from './components/Leaderboard.js';
+import Leaderboard from './components/Leaderboard';
 
 function App() {
   const handleLogout = () => {
     // Implement the logout functionality using the API endpoint
-    axiosInstance.delete(getQuizzesApiPath('auth_session/logout')
+    axiosInstance.delete(getQuizzesApiPath('auth_session/logout'), {}, {
+      withCredentials: true,
+    })
       .then((response) => {
         // Handle successful logout
         console.log('logged out successfully!');
@@ -20,7 +22,7 @@ function App() {
       .catch((error) => {
         // Handle logout error
         console.log('logout failed!')
-      }));
+      });    
   };
 
   return (
@@ -49,26 +51,14 @@ function App() {
           </ul>
         </nav>
 
-        <Switch>
-          <Route path="/quizzes/:id">
-            <QuizPage />
-          </Route>
-          <Route path="/quizzes">
-            <Quizzes />
-          </Route>
-          <Route path="/leaderboard">
-            <Leaderboard />
-          </Route>
-          <Route path="/login">
-            <Login />
-          </Route>
-          <Route path="/signup">
-            <Signup />
-          </Route>
-          <Route path="/">
-            <Home />
-          </Route>
-        </Switch>
+        <Routes>
+          <Route path="/quizzes/:id" element={<QuizPage />} />
+          <Route path="/quizzes" element={<Quizzes />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/" element={<Home />} />
+        </Routes>
       </div>
     </Router>
   );

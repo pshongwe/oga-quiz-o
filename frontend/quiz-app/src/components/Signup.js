@@ -6,9 +6,16 @@ function Signup() {
   const [password, setPassword] = useState('');
 
   const handleSignup = () => {
+    const formData = new URLSearchParams();
+    formData.append('email', email);
+    formData.append('password', password);
     // Implement the signup functionality using the API endpoint
-    axiosInstance.post(getQuizzesApiPath('auth_session/signup'), { email, password })
-      .then((response) => {
+    axiosInstance.post(getQuizzesApiPath('auth_session/signup'), formData, {
+      withCredentials: false, // Ensure cookies are included in requests
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded', // Required for form data
+      },
+    }).then((response) => {
         // Handle successful signup
         console.log('signup success!');
       })

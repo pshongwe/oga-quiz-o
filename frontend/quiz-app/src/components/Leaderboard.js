@@ -1,4 +1,3 @@
-// components/Leaderboard.js
 import React, { useState, useEffect } from 'react';
 import axiosInstance, { getQuizzesApiPath } from '../api/axiosConfig';
 import { useParams } from 'react-router-dom';
@@ -9,7 +8,7 @@ function Leaderboard() {
 
   useEffect(() => {
     // Fetch the leaderboard data using the API endpoint
-    axiosInstance.get(getQuizzesApiPath(`/api/v1/leaderboard/${id}`))
+    axiosInstance.get(getQuizzesApiPath(`leaderboard/${id}`))
       .then((response) => {
         setLeaderboard(response.data.leaderboard);
       })

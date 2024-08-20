@@ -1,5 +1,5 @@
-from flask import Flask, jsonify, abort, request, redirect, url_for
-from flask_cors import CORS
+from flask import Flask, jsonify, abort, request
+from flask_cors import CORS, cross_origin
 from flask_restx import Api
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -13,6 +13,7 @@ app = Flask(__name__)
 app.secret_key = os.environ.get('MY_SECRET') # Needed for Flask-Login sessions
 app.register_blueprint(app_views)
 CORS(app, resources={r"/api/v1/*": {"origins": "*"}})
+CORS(app, resources={r"/api/v1/*": {"origins": "*", "supports_credentials": True}})
 api = Api(app, version='1.0', title='Oga Quiz O API', description='Oga Quiz O API Documentation', doc='/swagger/')
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -56,7 +57,12 @@ def signup():
 
     return jsonify({"email": email, "message": "User created successfully"}), 201
 
+@cross_origin(headers=['Content-Type'])
+def options(self):
+    return jsonify(success=True)
+
 @app.route('/api/v1/auth_session/login', methods=['POST'])
+@cross_origin(headers=['Content-Type'])
 def login():
     email = request.form.get('email')
     password = request.form.get('password')
@@ -80,6 +86,7 @@ def login():
         abort(401, description="Invalid credentials")
 
 @app.route('/api/v1/auth_session/logout', methods=['DELETE'])
+@cross_origin(headers=['Content-Type'])
 @login_required
 def logout():
     user_id = str(current_user.id)  # Ensure this is a string
@@ -89,6 +96,7 @@ def logout():
 
 # New endpoints for the quiz functionality
 @app.route('/api/v1/quizzes', methods=['POST'])
+@cross_origin(headers=['Content-Type'])
 @login_required
 def create_quiz():
     if not request.json or 'title' not in request.json:
@@ -102,6 +110,7 @@ def create_quiz():
     return jsonify({"message": "Quiz created successfully", "id": str(result.inserted_id)}), 201
 
 @app.route('/api/v1/quizzes/<quiz_id>', methods=['GET'])
+@cross_origin(headers=['Content-Type'])
 @login_required
 def get_quiz(quiz_id):
     try:
@@ -114,6 +123,7 @@ def get_quiz(quiz_id):
         abort(400, description="Invalid quiz ID")
 
 @app.route('/api/v1/quizzes', methods=['GET'])
+@cross_origin(headers=['Content-Type'])
 @login_required
 def list_quizzes():
     quizzes = list(db._db.quizzes.find({}, {'title': 1}))
@@ -203,6 +213,7 @@ def get_next_question(session_id):
     return jsonify({"question": quiz['questions'][current_question]['question']})
 
 @app.route('/api/v1/score/<session_id>', methods=['GET'])
+@cross_origin(headers=['Content-Type'])
 @login_required
 def get_user_score(session_id):
     session = db._db.sessions.find_one({'_id': ObjectId(session_id)})
@@ -211,13 +222,40 @@ def get_user_score(session_id):
     return jsonify({"sessionid": session_id, "score": session['score']})
 
 @app.route('/api/v1/leaderboard/<quiz_id>', methods=['GET'])
+@cross_origin(headers=['Content-Type'])
 @login_required
 def get_leaderboard(quiz_id):
+    if not quiz_id:
+        return jsonify({ "message": 'No existing quiz id on leaderboard.'}), 400
     leaderboard = list(db._db.sessions.find(
         {'quiz_id': ObjectId(quiz_id)},
         {'_id': 0, 'score': 1}
     ).sort('score', -1).limit(10))
     return jsonify({"quiz_id": quiz_id, "leaderboard": leaderboard})
+
+@app.after_request
+def add_cors_headers(response):
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+    response.headers['Access-Control-Allow-Methods'] = 'GET,POST,PUT,DELETE,OPTIONS'
+    return response
+
+@app.after_request
+def add_security_headers(response):
+    response.headers['Referrer-Policy'] = 'no-referrer'
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization'
+    response.headers['Access-Control-Allow-Methods'] = 'GET,POST,PUT,DELETE,OPTIONS'
+    return response
+
+@app.after_request
+def enforce_https_in_redirects(response):
+    # Check if the response is a redirect and the scheme is HTTP
+    if response.status_code in (301, 302, 303, 307, 308) and request.url.startswith('http://'):
+        if not request.url.startswith('http://localhost'):
+            # Replace 'http://' with 'https://' in the Location header
+            response.headers['Location'] = response.headers['Location'].replace('http://', 'https://', 1)
+    return response
 
 if __name__ == "__main__":
     host = getenv("API_HOST", "0.0.0.0")

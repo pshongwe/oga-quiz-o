@@ -6,16 +6,29 @@ function Login() {
   const [password, setPassword] = useState('');
 
   const handleLogin = () => {
-    // Implement the login functionality using the API endpoint
-    axiosInstance.post(getQuizzesApiPath('auth_session/login'), { email, password })
-      .then((response) => {
-        // Handle successful login
-        console.log('logged in successfully!');
+    try {
+      const formData = new URLSearchParams();
+      formData.append('email', email);
+      formData.append('password', password);
+
+      axiosInstance.post(getQuizzesApiPath('auth_session/login'), formData, {
+        withCredentials: false, // Ensure cookies are included in requests
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded', // Required for form data
+        },
+      }).then((response) => {
+        // Handle successful signup
+        console.log('login success!');
       })
       .catch((error) => {
-        // Handle login error
+        // Handle signup error
         console.log('login failed!');
       });
+    } catch (error) {
+      console.error('Login failed before try:', error);
+      // Handle login error (e.g., show error message)
+    }
+
   };
 
   return (
