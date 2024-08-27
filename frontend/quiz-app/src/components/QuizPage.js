@@ -1,4 +1,3 @@
-// components/QuizPage.js
 import React, { useState, useEffect } from 'react';
 import axiosInstance, { getQuizzesApiPath } from '../api/axiosConfig';
 import { useParams } from 'react-router-dom';
@@ -56,7 +55,7 @@ function QuizPage() {
   return (
     <div>
       <h1>{quiz.title}</h1>
-      <p>{quiz.questions[currentQuestion].question}</p>
+      <p>{quiz.options[currentQuestion].question}</p>
       <input
         type="text"
         value={userAnswer}

@@ -1,38 +1,76 @@
-.App {
-  text-align: center;
+/* Reset default margin and padding */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f4f4f4;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+/* Navbar container */
+nav {
+  background-color: #333;
+  padding: 15px 20px;
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+/* Navbar list */
+nav ul {
+  list-style-type: none;
   display: flex;
-  flex-direction: column;
+  justify-content: space-around;
   align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
+}
+
+/* Navbar items */
+nav ul li {
+  margin: 0 10px;
+}
+
+/* Links in the navbar */
+nav ul li a, nav ul li button {
   color: white;
+  text-decoration: none;
+  padding: 10px 15px;
+  transition: background-color 0.3s, color 0.3s;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
 }
 
-.App-link {
-  color: #61dafb;
+nav ul li button {
+  font-family: inherit; /* Ensures the button inherits the font-family */
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
+/* Hover effect */
+nav ul li a:hover, nav ul li button:hover {
+  background-color: #575757;
+  color: white;
+  border-radius: 5px;
+}
+
+/* Main content container */
+main {
+  padding: 20px;
+}
+
+/* Responsive design for mobile */
+@media (max-width: 768px) {
+  nav ul {
+      flex-direction: column;
+      align-items: flex-start;
   }
-  to {
-    transform: rotate(360deg);
+
+  nav ul li {
+      margin: 5px 0;
+  }
+
+  nav ul li a, nav ul li button {
+      display: block;
+      width: 100%;
+      text-align: left;
   }
 }

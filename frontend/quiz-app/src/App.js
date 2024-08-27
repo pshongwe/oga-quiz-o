@@ -2,6 +2,8 @@ import React from 'react';
 import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
 import axiosInstance, { getQuizzesApiPath } from './api/axiosConfig';
 
+import './App.css';
+
 import Home from './components/Home';
 import Quizzes from './components/Quizzes';
 import QuizPage from './components/QuizPage';

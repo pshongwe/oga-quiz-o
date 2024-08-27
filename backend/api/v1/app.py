@@ -1,7 +1,6 @@
 from flask import Flask, jsonify, abort, request
 from flask_cors import CORS, cross_origin
 from flask_restx import Api
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from bson.objectid import ObjectId
 from api.v1.views import app_views
@@ -15,22 +14,9 @@ app.register_blueprint(app_views)
 CORS(app, resources={r"/api/v1/*": {"origins": "*"}})
 CORS(app, resources={r"/api/v1/*": {"origins": "*", "supports_credentials": True}})
 api = Api(app, version='1.0', title='Oga Quiz O API', description='Oga Quiz O API Documentation', doc='/swagger/')
-login_manager = LoginManager()
-login_manager.init_app(app)
+
 auth = Auth()
 db = DB()
-
-# User class for Flask-Login
-class User(UserMixin):
-    def __init__(self, user_id):
-        self.id = user_id
-
-@login_manager.user_loader
-def load_user(user_id):
-    user = db.find_user_by(_id=ObjectId(user_id))
-    if user:
-        return User(str(user['_id']))
-    return None
 
 @app.errorhandler(404)
 def not_found(error) -> str:
@@ -73,9 +59,6 @@ def login():
         if not user or not check_password_hash(user['hashed_password'], password):
             abort(401, description="Invalid credentials")
 
-        user_obj = User(str(user['_id']))
-        login_user(user_obj)
-
         # Create a session and set a cookie
         session_id = auth.create_session(email)
         response = jsonify({"email": email, "message": "logged in"})
@@ -85,7 +68,7 @@ def login():
     except ValueError:
         abort(401, description="Invalid credentials")
 
-@app.route('/api/v1/auth_session/<session_id>/logout', methods=['DELETE'])
+@app.route('/api/v1/auth_session/logout', methods=['DELETE'])
 @cross_origin(headers=['Content-Type'])
 def logout():
     # TODO: fix logout

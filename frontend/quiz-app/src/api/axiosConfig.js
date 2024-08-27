@@ -12,6 +12,7 @@ const axiosInstance = axios.create({
     }
 });
 
+
 export const getQuizzesApiPath = (path) => `${baseURL}/api/v1/${path}`;
 
 export default axiosInstance;
