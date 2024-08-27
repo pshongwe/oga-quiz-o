@@ -85,11 +85,13 @@ def login():
     except ValueError:
         abort(401, description="Invalid credentials")
 
-@app.route('/api/v1/auth_session/logout', methods=['DELETE'])
+@app.route('/api/v1/auth_session/<session_id>/logout', methods=['DELETE'])
 @cross_origin(headers=['Content-Type'])
 def logout():
-    user_id = str(current_user.id)  # Ensure this is a string
-    auth.destroy_session(user_id)
+    # TODO: fix logout
+    # session_id = request.cookies
+    # user_id = auth.get_user_from_session_id(session_id)
+    # auth.destroy_session(user_id)
     return jsonify({}), 204
 
 # New endpoints for the quiz functionality
@@ -132,7 +134,7 @@ def add_question(quiz_id):
         abort(400, description="Missing question or answer")
     question = {
         'question': request.json['question'],
-        'answer': request.json['answer']
+        'correctAnswer': request.json['correctAnswer']
     }
     result = db._db.quizzes.update_one(
         {'_id': ObjectId(quiz_id)},
@@ -166,16 +168,10 @@ def start_quiz_session(quiz_id):
 def submit_answer(session_id):
     if not request.json or 'answer' not in request.json:
         abort(400, description="Missing answer")
-    session = db._db.sessions.find_one({'_id': ObjectId(session_id)})
-    if not session:
-        abort(404, description="Session not found")
-    quiz = db._db.quizzes.find_one({'_id': session['quiz_id']})
-    current_question = session['current_question']
+    session_info = db._db.sessions.find_one({'_id': ObjectId(session_id)})
+    quiz_info =  db._db.quizzes.find_one({'_id': ObjectId(session_info['quiz_id'])})
 
-    if current_question >= len(quiz['questions']):
-        return jsonify({"message": "Quiz completed"}), 400
-
-    correct = quiz['questions'][current_question]['answer'].lower() == request.json['answer'].lower()
+    correct = quiz_info['correctAnswer'] == request.json['answer']
 
     if correct:
         db._db.sessions.update_one(
@@ -197,7 +193,7 @@ def get_next_question(session_id):
     quiz = db._db.quizzes.find_one({'_id': session['quiz_id']})
 
     current_question = session['current_question']
-    if current_question >= len(quiz['questions']):
+    if current_question >= len(quiz['options']):
         return jsonify({"message": "Quiz completed"})
 
     return jsonify({"question": quiz['questions'][current_question]['question']})
