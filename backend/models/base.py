@@ -134,4 +134,4 @@ class Base():
                     return False
             return True
         
-        return list(filter(_search, DATA[s_class].values()))
+        return list(filter(_search, DATA.get(s_class, {}).values()))
