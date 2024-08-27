@@ -87,17 +87,14 @@ def login():
 
 @app.route('/api/v1/auth_session/logout', methods=['DELETE'])
 @cross_origin(headers=['Content-Type'])
-@login_required
 def logout():
     user_id = str(current_user.id)  # Ensure this is a string
     auth.destroy_session(user_id)
-    logout_user()
     return jsonify({}), 204
 
 # New endpoints for the quiz functionality
 @app.route('/api/v1/quizzes', methods=['POST'])
 @cross_origin(headers=['Content-Type'])
-@login_required
 def create_quiz():
     if not request.json or 'title' not in request.json:
         abort(400, description="Missing title")
@@ -111,7 +108,6 @@ def create_quiz():
 
 @app.route('/api/v1/quizzes/<quiz_id>', methods=['GET'])
 @cross_origin(headers=['Content-Type'])
-@login_required
 def get_quiz(quiz_id):
     try:
         quiz = db._db.quizzes.find_one({'_id': ObjectId(quiz_id)})
@@ -124,7 +120,6 @@ def get_quiz(quiz_id):
 
 @app.route('/api/v1/quizzes', methods=['GET'])
 @cross_origin(headers=['Content-Type'])
-@login_required
 def list_quizzes():
     quizzes = list(db._db.quizzes.find({}, {'title': 1}))
     for quiz in quizzes:
@@ -132,7 +127,6 @@ def list_quizzes():
     return jsonify(quizzes)
 
 @app.route('/api/v1/quizzes/<quiz_id>/question', methods=['POST'])
-@login_required
 def add_question(quiz_id):
     if not request.json or 'question' not in request.json or 'answer' not in request.json:
         abort(400, description="Missing question or answer")
@@ -149,7 +143,6 @@ def add_question(quiz_id):
     abort(404, description="Quiz not found")
 
 @app.route('/api/v1/question/<quiz_id>/<int:question_index>', methods=['GET'])
-@login_required
 def get_question(quiz_id, question_index):
     quiz = db._db.quizzes.find_one({'_id': ObjectId(quiz_id)})
     if quiz and 0 <= question_index < len(quiz.get('questions', [])):
@@ -157,7 +150,6 @@ def get_question(quiz_id, question_index):
     abort(404, description="Question not found")
 
 @app.route('/api/v1/quizzes/<quiz_id>/start', methods=['POST'])
-@login_required
 def start_quiz_session(quiz_id):
     quiz = db._db.quizzes.find_one({'_id': ObjectId(quiz_id)})
     if not quiz:
@@ -171,7 +163,6 @@ def start_quiz_session(quiz_id):
     return jsonify({"session_id": str(result.inserted_id), "message": "Quiz session started"})
 
 @app.route('/api/v1/quizzes/session/<session_id>', methods=['PUT'])
-@login_required
 def submit_answer(session_id):
     if not request.json or 'answer' not in request.json:
         abort(400, description="Missing answer")
@@ -199,7 +190,6 @@ def submit_answer(session_id):
     return jsonify({"correct": correct, "message": "Answer submitted successfully"})
 
 @app.route('/api/v1/quizzes/session/<session_id>', methods=['GET'])
-@login_required
 def get_next_question(session_id):
     session = db._db.sessions.find_one({'_id': ObjectId(session_id)})
     if not session:
@@ -214,7 +204,6 @@ def get_next_question(session_id):
 
 @app.route('/api/v1/score/<session_id>', methods=['GET'])
 @cross_origin(headers=['Content-Type'])
-@login_required
 def get_user_score(session_id):
     session = db._db.sessions.find_one({'_id': ObjectId(session_id)})
     if not session:
@@ -223,7 +212,6 @@ def get_user_score(session_id):
 
 @app.route('/api/v1/leaderboard/<quiz_id>', methods=['GET'])
 @cross_origin(headers=['Content-Type'])
-@login_required
 def get_leaderboard(quiz_id):
     if not quiz_id:
         return jsonify({ "message": 'No existing quiz id on leaderboard.'}), 400
@@ -258,6 +246,6 @@ def enforce_https_in_redirects(response):
     return response
 
 if __name__ == "__main__":
-    host = getenv("API_HOST", "0.0.0.0")
-    port = getenv("API_PORT", "5000")
+    host = os.getenv("API_HOST", "0.0.0.0")
+    port = os.getenv("API_PORT", "5000")
     app.run(debug=True, host=host, port=port)
