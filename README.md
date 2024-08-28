@@ -16,7 +16,7 @@ This repository contains the backend API for the Oga Quiz O application. The API
 ## Features
 
 - User Signup and Login with secure password hashing.
-- JWT-based authentication.
+- Basic-Auth authentication.
 - CRUD operations for quizzes.
 - Leaderboard and score tracking for quizzes.
 - RESTful API with detailed Swagger documentation.
