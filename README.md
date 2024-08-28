@@ -53,14 +53,6 @@ API_PORT=5000
 MONGO_URI=mongodb://localhost:27017/oga_db
 ```
 
-### Run the Application
-
-```bash
-python app.py
-```
-
-The API will be available at `http://localhost:5000`.
-
 ## Usage
 
 ### Running the Application
