@@ -4,24 +4,25 @@ from flask_restx import Api
 from werkzeug.security import generate_password_hash, check_password_hash
 from bson.objectid import ObjectId
 from api.v1.views import app_views
+from api.v1.auth.auth import Auth
 from libs.db import DB
 import os
 from flask_httpauth import HTTPBasicAuth
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('MY_SECRET')  # Needed for Flask-Login sessions
+app.secret_key = os.environ.get('MY_SECRET')
 app.register_blueprint(app_views)
 CORS(app, resources={r"/api/v1/*": {"origins": "*", "supports_credentials": True}})
 api = Api(app, version='1.0', title='Oga Quiz O API', description='Oga Quiz O API Documentation', doc='/swagger/')
 
-auth = HTTPBasicAuth()
+auth = Auth()
 db = DB()
 
-@auth.verify_password
-def verify_password(email, password):
-    user = db.find_user_by({"email": email})
-    if user and check_password_hash(user['hashed_password'], password):
-        return user['_id']  # Assuming you store `_id` as the user identifier
+# @auth.verify_password
+# def verify_password(email, password):
+#     user = db.find_user_by(email=email, password=password)
+#     if user and check_password_hash(user['hashed_password'], password):
+#         return user['_id']  # Assuming you store `_id` as the user identifier
 
 @app.errorhandler(404)
 def not_found(error) -> str:
@@ -52,6 +53,13 @@ def signup():
 def options(self):
     return jsonify(success=True)
 
+# @app.before_request
+# def require_login():
+#     exclude_paths = ['/api/v1/auth_session/signup', '/api/v1/auth_session/login']
+    
+#     if not any(request.path.startswith(path) for path in exclude_paths) and 'user_id' not in session:
+#         abort(401, description="Unauthorized")
+
 @app.route('/api/v1/auth_session/login', methods=['POST'])
 @cross_origin(headers=['Content-Type'])
 # @auth.login_required
@@ -61,7 +69,7 @@ def login():
     if not email or not password:
         abort(400, description="Missing email or password")
     
-    user = db.find_user_by({"email": email})
+    user = db.find_user_by(email=email, password=password)
     if not user or not check_password_hash(user['hashed_password'], password):
         abort(401, description="Invalid credentials")
 
