@@ -1,22 +1,27 @@
-from flask import Flask, jsonify, abort, request
+from flask import Flask, jsonify, abort, request, session
 from flask_cors import CORS, cross_origin
 from flask_restx import Api
 from werkzeug.security import generate_password_hash, check_password_hash
 from bson.objectid import ObjectId
 from api.v1.views import app_views
-from api.v1.auth.auth import Auth
 from libs.db import DB
 import os
+from flask_httpauth import HTTPBasicAuth
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('MY_SECRET') # Needed for Flask-Login sessions
+app.secret_key = os.environ.get('MY_SECRET')  # Needed for Flask-Login sessions
 app.register_blueprint(app_views)
-CORS(app, resources={r"/api/v1/*": {"origins": "*"}})
 CORS(app, resources={r"/api/v1/*": {"origins": "*", "supports_credentials": True}})
 api = Api(app, version='1.0', title='Oga Quiz O API', description='Oga Quiz O API Documentation', doc='/swagger/')
 
-auth = Auth()
+auth = HTTPBasicAuth()
 db = DB()
+
+@auth.verify_password
+def verify_password(email, password):
+    user = db.find_user_by({"email": email})
+    if user and check_password_hash(user['hashed_password'], password):
+        return user['_id']  # Assuming you store `_id` as the user identifier
 
 @app.errorhandler(404)
 def not_found(error) -> str:
@@ -49,33 +54,32 @@ def options(self):
 
 @app.route('/api/v1/auth_session/login', methods=['POST'])
 @cross_origin(headers=['Content-Type'])
+# @auth.login_required
 def login():
     email = request.form.get('email')
     password = request.form.get('password')
     if not email or not password:
         abort(400, description="Missing email or password")
-    try:
-        user = db.find_user_by(email=email)
-        if not user or not check_password_hash(user['hashed_password'], password):
-            abort(401, description="Invalid credentials")
-
-        # Create a session and set a cookie
-        session_id = auth.create_session(email)
-        response = jsonify({"email": email, "message": "logged in"})
-        response.set_cookie('session_id', str(session_id), httponly=True, secure=False)  # Adjust `secure` based on your environment
-        return response
-
-    except ValueError:
+    
+    user = db.find_user_by({"email": email})
+    if not user or not check_password_hash(user['hashed_password'], password):
         abort(401, description="Invalid credentials")
+
+    # Create a session and set a cookie
+    session['user_id'] = str(user['_id'])
+    response = jsonify({"email": email, "message": "logged in"})
+    response.set_cookie('session_id', str(session.sid), httponly=True, secure=False)  # Adjust `secure` based on your environment
+    return response
 
 @app.route('/api/v1/auth_session/logout', methods=['DELETE'])
 @cross_origin(headers=['Content-Type'])
+# @auth.login_required
 def logout():
-    # TODO: fix logout
-    # session_id = request.cookies
-    # user_id = auth.get_user_from_session_id(session_id)
-    # auth.destroy_session(user_id)
-    return jsonify({}), 204
+    session.pop('user_id', None)
+    response = jsonify({"message": "Logged out successfully"})
+    response.delete_cookie('session_id')
+    return response, 204
+
 
 # New endpoints for the quiz functionality
 @app.route('/api/v1/quizzes', methods=['POST'])

@@ -44,10 +44,8 @@ class DB:
     def find_user_by(self, collection_name: str = "users", **kwargs) -> dict:
         """Finds a user based on a set of filters.
         """
-        collection = self.get_collection(collection_name)
+        collection = self.get_collection(str(collection_name))
         user = collection.find_one(kwargs)
-        if not user:
-            raise ValueError("No user found with the given criteria.")
         return user
 
     def update_user(self, user_id: str, collection_name: str = "users", **kwargs) -> None:
